@@ -41,48 +41,28 @@ function getText(p) {
   return '';
 }
 
-async function getBlocks(pageId) {
-  const res = await notionRequest(`/v1/blocks/${pageId}/children?page_size=100`);
-  return res.results || [];
-}
-
-function blocksToHtml(blocks) {
-  return blocks.map(b => {
-    const t = b.type;
-    const text = rt((b[t]||{}).rich_text||[]);
-    switch(t) {
-      case 'heading_1': return `<h2>${text}</h2>`;
-      case 'heading_2': return `<h2>${text}</h2>`;
-      case 'heading_3': return `<h3>${text}</h3>`;
-      case 'paragraph': return text ? `<p>${text}</p>` : '';
-      case 'bulleted_list_item': return `<li>${text}</li>`;
-      case 'numbered_list_item': return `<li>${text}</li>`;
-      case 'quote': return `<blockquote>${text}</blockquote>`;
-      case 'divider': return `<hr>`;
-      case 'callout': return `<blockquote><strong>${text}</strong></blockquote>`;
-      default: return '';
-    }
+function mdToHtml(raw) {
+  return (raw||'').split('\n').map(line => {
+    if (line.startsWith('### ')) return `<h3>${line.slice(4)}</h3>`;
+    if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
+    if (line.startsWith('# ')) return `<h2>${line.slice(2)}</h2>`;
+    if (line.startsWith('- ')) return `<li>${line.slice(2)}</li>`;
+    if (line.trim() === '' || line.trim() === '---') return '';
+    return `<p>${line}</p>`;
   }).join('\n');
 }
 
 async function main() {
-  console.log('Token prefix:', TOKEN ? TOKEN.slice(0,8) : 'MISSING');
-  console.log('DB_ID:', DB_ID ? DB_ID.slice(0,8) : 'MISSING');
-
   const res = await notionRequest(`/v1/databases/${DB_ID}/query`, {
     filter: { property: 'Status', select: { equals: '已發布' } },
     sorts: [{ property: 'Date', direction: 'descending' }]
   });
 
-  if (res.object === 'error') {
-    console.error('Notion API error:', res.message);
-    process.exit(1);
-  }
+  if (res.object === 'error') { console.error(res.message); process.exit(1); }
 
   const articles = [];
   for (const page of res.results) {
     const p = page.properties;
-    const blocks = await getBlocks(page.id);
     articles.push({
       title:    getText(p.Title),
       excerpt:  getText(p.Excerpt),
@@ -92,7 +72,7 @@ async function main() {
       readtime: getText(p.ReadTime),
       series:   getText(p.Series),
       featured: getText(p.Featured),
-      html:     blocksToHtml(blocks)
+      html:     mdToHtml(getText(p.Content))
     });
     console.log('✓', getText(p.Title));
   }
