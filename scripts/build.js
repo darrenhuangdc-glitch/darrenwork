@@ -46,6 +46,8 @@ function mdToHtml(raw) {
     if (line.startsWith('### ')) return `<h3>${line.slice(4)}</h3>`;
     if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
     if (line.startsWith('# ')) return `<h2>${line.slice(2)}</h2>`;
+    const imgMatch = line.match(/!\[.*?\]\((.*?)\)/);
+if (imgMatch) return `<img src="${imgMatch[1]}" style="max-width:100%;border-radius:8px;margin:16px 0">`;
     if (line.startsWith('- ')) return `<li>${line.slice(2)}</li>`;
     if (line.trim() === '' || line.trim() === '---') return '';
     return `<p>${line}</p>`;
