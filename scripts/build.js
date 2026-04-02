@@ -49,7 +49,9 @@ function blocksToMarkdown(blocks) {
 }
 
 async function main() {
-  console.log('Fetching articles from Notion...');
+  console.log('notion type:', typeof notion);
+  console.log('notion.databases type:', typeof notion.databases);
+  
   const res = await notion.databases.query({
     database_id: DB_ID,
     filter: { property: 'Status', select: { equals: '已發布' } },
@@ -72,7 +74,6 @@ async function main() {
       slug:     getText(prop(page, 'Slug')),
       html
     });
-    console.log(`  ✓ ${getText(prop(page, 'Title'))}`);
   }
 
   const template = fs.readFileSync('template.html', 'utf8');
@@ -81,7 +82,7 @@ async function main() {
     `const ARTICLES_DATA = ${JSON.stringify(articles, null, 2)};`
   );
   fs.writeFileSync('index.html', output);
-  console.log(`Done. ${articles.length} articles written to index.html`);
+  console.log(`Done. ${articles.length} articles written.`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
