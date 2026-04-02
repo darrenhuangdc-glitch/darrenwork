@@ -58,23 +58,28 @@ async function main() {
 
   const articles = [];
   for (const page of res.results) {
-    const title    = getText(prop(page, 'Title'));
-    const excerpt  = getText(prop(page, 'Excerpt'));
-    const category = getText(prop(page, 'Category'));
-    const tags     = getText(prop(page, 'Tags'));
-    const date     = getText(prop(page, 'Date'));
-    const readtime = getText(prop(page, 'ReadTime'));
-    const series   = getText(prop(page, 'Series'));
-    const featured = getText(prop(page, 'Featured'));
-    const slug     = getText(prop(page, 'Slug'));
-    const md       = await getPageContent(page.id);
-    const html     = marked.parse(md);
-    articles.push({ title, excerpt, category, tags, date, readtime, series, featured, slug, html });
-    console.log(`  ✓ ${title}`);
+    const md   = await getPageContent(page.id);
+    const html = marked.parse(md);
+    articles.push({
+      title:    getText(prop(page, 'Title')),
+      excerpt:  getText(prop(page, 'Excerpt')),
+      category: getText(prop(page, 'Category')),
+      tags:     getText(prop(page, 'Tags')),
+      date:     getText(prop(page, 'Date')),
+      readtime: getText(prop(page, 'ReadTime')),
+      series:   getText(prop(page, 'Series')),
+      featured: getText(prop(page, 'Featured')),
+      slug:     getText(prop(page, 'Slug')),
+      html
+    });
+    console.log(`  ✓ ${getText(prop(page, 'Title'))}`);
   }
 
   const template = fs.readFileSync('template.html', 'utf8');
-  const output = template.replace('/* __ARTICLES_DATA__ */', `const ARTICLES_DATA = ${JSON.stringify(articles, null, 2)};`);
+  const output = template.replace(
+    '/* __ARTICLES_DATA__ */',
+    `const ARTICLES_DATA = ${JSON.stringify(articles, null, 2)};`
+  );
   fs.writeFileSync('index.html', output);
   console.log(`Done. ${articles.length} articles written to index.html`);
 }
