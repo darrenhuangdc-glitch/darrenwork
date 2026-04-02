@@ -5,7 +5,6 @@ const fs = require('fs');
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const DB_ID = process.env.NOTION_DB_ID;
 
-// ── helpers ──────────────────────────────────────────────
 const prop = (page, key) => page.properties[key];
 
 function getText(p) {
@@ -23,15 +22,10 @@ async function getPageContent(pageId) {
   const blocks = [];
   let cursor;
   do {
-    const res = await notion.blocks.children.list({
-      block_id: pageId,
-      start_cursor: cursor,
-      page_size: 100
-    });
+    const res = await notion.blocks.children.list({ block_id: pageId, start_cursor: cursor, page_size: 100 });
     blocks.push(...res.results);
     cursor = res.has_more ? res.next_cursor : undefined;
   } while (cursor);
-
   return blocksToMarkdown(blocks);
 }
 
@@ -54,10 +48,8 @@ function blocksToMarkdown(blocks) {
   }).join('\n');
 }
 
-// ── main ─────────────────────────────────────────────────
 async function main() {
   console.log('Fetching articles from Notion...');
-
   const res = await notion.databases.query({
     database_id: DB_ID,
     filter: { property: 'Status', select: { equals: '已發布' } },
@@ -75,22 +67,14 @@ async function main() {
     const series   = getText(prop(page, 'Series'));
     const featured = getText(prop(page, 'Featured'));
     const slug     = getText(prop(page, 'Slug'));
-
-    // 從 page blocks 讀取內文
-    const md = await getPageContent(page.id);
-    const html = marked.parse(md);
-
+    const md       = await getPageContent(page.id);
+    const html     = marked.parse(md);
     articles.push({ title, excerpt, category, tags, date, readtime, series, featured, slug, html });
     console.log(`  ✓ ${title}`);
   }
 
-  // 把文章資料注入 HTML 模板
   const template = fs.readFileSync('template.html', 'utf8');
-  const output = template.replace(
-    '/* __ARTICLES_DATA__ */',
-    `const ARTICLES_DATA = ${JSON.stringify(articles, null, 2)};`
-  );
-
+  const output = template.replace('/* __ARTICLES_DATA__ */', `const ARTICLES_DATA = ${JSON.stringify(articles, null, 2)};`);
   fs.writeFileSync('index.html', output);
   console.log(`Done. ${articles.length} articles written to index.html`);
 }
