@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: npm install @notionhq/client marked
+        run: echo "No dependencies needed"
       - name: Fetch from Notion and build site
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
