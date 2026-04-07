@@ -479,6 +479,8 @@ window.addEventListener('popstate', (e) => {
   if (e.state.view === 'article') openArticle(e.state.id, false);
   else showPage(e.state.view, false);
 });
+
+document.addEventListener('DOMContentLoaded', () => { initArticles(); });
 </script>
 </body>
 </html>
