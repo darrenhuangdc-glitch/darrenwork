@@ -455,77 +455,56 @@ function openArticle(id) {
 function goBack() { showPage(lastPage || 'home'); }
 
 // ── 頁面切換 ──────────────────────────────────────────────
-function showPage(name) {
+function showPage(name, pushState = true) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   const n = document.getElementById('nav-' + name);
   if (n) n.classList.add('active');
   currentPage = name;
-  window.scrollTo(0,0);
+  window.scrollTo(0, 0);
+  if (pushState) history.pushState({ view: name }, '', name === 'home' ? '#home' : `#${name}`);
   if (name === 'articles') {
     renderArticles(document.getElementById('allArticlesContainer'), getFiltered());
     renderTagList();
   }
 }
 
-// ── 主題 ─────────────────────────────────────────────────
-function toggleTheme() {
-  const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', t);
-  localStorage.setItem('theme', t);
+function openArticle(id, pushState = true) {
+  const a = ARTICLES[id];
+  if (!a) return;
+  lastPage = currentPage;
+  const slug = a.title.replace(/\s+/g, '-').replace(/[^\w\u4e00-\u9fff-]/g, '').toLowerCase();
+  if (pushState) history.pushState({ view: 'article', id }, '', `#article-${slug}`);
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-article').classList.add('active');
+  currentPage = 'article';
+  document.getElementById('articleContent').innerHTML = `
+    <button class="back-btn" onclick="goBack()">← 返回</button>
+    <div class="article-header">
+      <div class="meta">
+        <span class="article-series">${a.series || a.category || ''}</span>
+        <span class="article-dot"></span>
+        <span class="article-date">${a.date || ''}</span>
+        <span class="article-dot"></span>
+        <span class="article-readtime">${a.readtime || ''}</span>
+      </div>
+      <h1>${a.title}</h1>
+      <p class="lead">${a.excerpt}</p>
+    </div>
+    <div class="article-divider"></div>
+    <div class="article-body">${a.html || ''}</div>`;
+  window.scrollTo(0, 0);
 }
 
-// ── 訂閱 ─────────────────────────────────────────────────
-// 替換成你的 Google Apps Script URL
-const SUBSCRIBE_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL';
+function goBack() { showPage(lastPage || 'home'); }
 
-function handleSubscribe(inputId, successId) {
-  const email = document.getElementById(inputId).value.trim();
-  if (!email || !email.includes('@')) { document.getElementById(inputId).focus(); return; }
-  if (SUBSCRIBE_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL') {
-    fetch(SUBSCRIBE_URL, { method:'POST', body: JSON.stringify({email}), headers:{'Content-Type':'application/json'} })
-      .catch(() => {});
-  }
-  document.getElementById(successId).style.display = 'block';
-}
-
-// ── 搜尋 ─────────────────────────────────────────────────
-document.getElementById('searchInput').addEventListener('input', function() {
-  const q = this.value.trim().toLowerCase();
-  const box = document.getElementById('searchResults');
-  if (!q) { box.style.display = 'none'; return; }
-  const results = ARTICLES.filter(a =>
-    a.title.toLowerCase().includes(q) ||
-    a.excerpt.toLowerCase().includes(q) ||
-    (Array.isArray(a.tags) ? a.tags : []).some(t => t.toLowerCase().includes(q))
-  );
-  box.style.display = 'block';
-  box.innerHTML = results.length
-    ? results.map(a => `<div class="search-result-item" onclick="openArticle(${a.id});this.closest('.search-results').style.display='none';document.getElementById('searchInput').value=''">
-        <div class="sr-title">${a.title}</div>
-        <div class="sr-excerpt">${a.excerpt.slice(0,60)}…</div>
-      </div>`).join('')
-    : '<div class="no-results">沒有找到相關文章</div>';
+// 監聽上一頁/下一頁
+window.addEventListener('popstate', (e) => {
+  if (!e.state) { showPage('home', false); return; }
+  if (e.state.view === 'article') openArticle(e.state.id, false);
+  else showPage(e.state.view, false);
 });
-document.addEventListener('click', e => {
-  if (!e.target.closest('.nav-search-wrap')) document.getElementById('searchResults').style.display = 'none';
-});
-
-// ── 閱讀進度條 ────────────────────────────────────────────
-window.addEventListener('scroll', () => {
-  const d = document.documentElement;
-  const pct = d.scrollHeight - d.clientHeight > 0 ? (window.scrollY / (d.scrollHeight - d.clientHeight)) * 100 : 0;
-  document.getElementById('reading-bar').style.width = pct + '%';
-});
-
-// ── 初始化 ────────────────────────────────────────────────
-(function() {
-  const saved = localStorage.getItem('theme');
-  if (saved) document.documentElement.setAttribute('data-theme', saved);
-  else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme','dark');
-  initArticles();
-})();
 </script>
 </body>
 </html>
