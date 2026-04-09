@@ -109,6 +109,17 @@ nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px sol
 .article-body table{width:100%;border-collapse:collapse;margin:20px 0;font-size:14px}
 .article-body th{background:var(--bg-secondary);padding:10px 14px;text-align:left;font-weight:600;font-size:13px;border-bottom:2px solid var(--border)}
 .article-body td{padding:10px 14px;border-bottom:1px solid var(--border)}
+/* Callout */
+.article-body .callout{display:flex;gap:12px;background:var(--bg-secondary);border-radius:var(--radius-sm);padding:14px 16px;margin:16px 0}
+.article-body .callout-icon{flex-shrink:0;font-size:18px}
+/* Figure / Image */
+.article-body figure{margin:20px 0}
+.article-body figure img{max-width:100%;border-radius:8px;display:block}
+.article-body figure figcaption{font-size:13px;color:var(--text-faint);margin-top:6px;text-align:center}
+/* Toggle */
+.article-body details{background:var(--bg-secondary);border-radius:var(--radius-sm);padding:12px 16px;margin:12px 0}
+.article-body details summary{cursor:pointer;font-weight:600;user-select:none}
+.article-body details[open] summary{margin-bottom:10px}
 /* About & subscribe */
 .about-avatar{width:80px;height:80px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:24px;border:2px solid rgba(45,91,227,.15)}
 .subscribe-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px}
@@ -437,7 +448,7 @@ function showPage(name, pushState = true) {
   if (n) n.classList.add('active');
   currentPage = name;
   window.scrollTo(0, 0);
-  if (pushState) history.pushState({ view: name }, '', name === 'home' ? '#home' : `#${name}`);
+  if (pushState) history.pushState({ view: name }, '', name === 'home' ? location.pathname : `#${name}`);
   if (name === 'articles') {
     renderArticles(document.getElementById('allArticlesContainer'), getFiltered());
     renderTagList();
@@ -480,7 +491,24 @@ window.addEventListener('popstate', (e) => {
   else showPage(e.state.view, false);
 });
 
-document.addEventListener('DOMContentLoaded', () => { initArticles(); });
+document.addEventListener('DOMContentLoaded', () => {
+  initArticles();
+  // 修復：重新整理時從 hash 還原頁面狀態
+  const hash = window.location.hash;
+  if (hash) {
+    if (hash.startsWith('#article-')) {
+      const slug = hash.replace('#article-', '');
+      const idx = ARTICLES.findIndex(a =>
+        a.title.replace(/\s+/g, '-').replace(/[^\w\u4e00-\u9fff-]/g, '').toLowerCase() === slug
+      );
+      if (idx !== -1) openArticle(idx, false);
+    } else if (hash === '#articles') {
+      showPage('articles', false);
+    } else if (hash === '#about') {
+      showPage('about', false);
+    }
+  }
+});
 </script>
 </body>
 </html>
